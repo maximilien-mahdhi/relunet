@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[oc]
+*.egg-info
+build/
+dist/
+
+# Environments
+.venv
+
+# uv
+uv.lock
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
