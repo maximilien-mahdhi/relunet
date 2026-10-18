@@ -7,6 +7,8 @@ name = "relunet"
 version = "0.1.0"
 description = "Two-layer ReLU network trained with gradient descent in pure NumPy"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
