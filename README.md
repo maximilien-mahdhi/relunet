@@ -62,10 +62,18 @@ The instructions below target Linux (Debian/Ubuntu).
 ```bash
 git clone https://github.com/maximilien-mahdhi/relunet.git
 cd relunet
+uv sync
+```
+
+Versions are pinned in `uv.lock`. Without uv:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e . --group dev
 ```
+
+Run the commands below with `uv run` (e.g. `uv run python scripts/run_experiment.py gd-vs-sgd`), or directly once the virtual environment is active.
 
 ## Quick start
 
@@ -160,8 +168,8 @@ relunet/
 ## Development and design notes
 
 ```bash
-ruff check . && ruff format --check .
-pytest
+uv run ruff check . && uv run ruff format --check .
+uv run pytest
 ```
 
 - **Gradients.** The backward pass is written by hand and checked against finite differences in `tests/test_model.py`.
