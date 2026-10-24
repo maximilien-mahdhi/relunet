@@ -5,17 +5,26 @@ writes it to disk and closes it.
 """
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from numpy.typing import ArrayLike
 
 from relunet.model import forward
+from relunet.training import TrainResult
 
 log = logging.getLogger(__name__)
 
+#: Where to save a figure; ``None`` displays it instead.
+SavePath = Path | str | None
 
-def _finish(fig, save_path):
+
+def _finish(fig: Figure, save_path: SavePath) -> None:
+    """Display the figure, or save it to ``save_path`` and close it."""
     fig.tight_layout()
     if save_path is None:
         plt.show()
@@ -27,18 +36,20 @@ def _finish(fig, save_path):
     log.info("Saved figure to %s", save_path)
 
 
-def _finite(values, max_value=1e12):
+def _finite(values: ArrayLike, max_value: float = 1e12) -> np.ndarray:
     """Replace non-finite or astronomically large values (diverged runs) by NaN so that
     they are not drawn; matplotlib cannot build log-scale ticks for them."""
     values = np.asarray(values, dtype=float)
     return np.where(np.isfinite(values) & (np.abs(values) < max_value), values, np.nan)
 
 
-def _grid(x_train, margin=0.5, n=100):
+def _grid(x_train: np.ndarray, margin: float = 0.5, n: int = 100) -> np.ndarray:
+    """Regular grid of n points covering the training inputs, with a margin."""
     return np.linspace(x_train.min() - margin, x_train.max() + margin, n)
 
 
-def _info_box(ax, text):
+def _info_box(ax: Axes, text: str) -> None:
+    """Write ``text`` in a framed box inside ``ax``."""
     ax.text(
         0.10,
         0.30,
@@ -49,7 +60,14 @@ def _info_box(ax, text):
     )
 
 
-def plot_data(x_train, y_train, x_test, y_test, save_path=None):
+def plot_data(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+) -> None:
+    """Scatter plot of the train and test samples."""
     fig, ax = plt.subplots(figsize=(5, 3))
     ax.scatter(x_train, y_train, color="red", label="Train samples")
     ax.scatter(x_test, y_test, color="blue", label="Test samples")
@@ -59,7 +77,10 @@ def plot_data(x_train, y_train, x_test, y_test, save_path=None):
     _finish(fig, save_path)
 
 
-def plot_hand_fit(x_train, y_train, w, save_path=None):
+def plot_hand_fit(
+    x_train: np.ndarray, y_train: np.ndarray, w: np.ndarray, save_path: SavePath = None
+) -> None:
+    """Training samples and the network built by hand."""
     x_line = np.linspace(-2, 2, 500)
     y_line, _ = forward(w, x_line)
 
@@ -74,8 +95,16 @@ def plot_hand_fit(x_train, y_train, w, save_path=None):
 
 
 def plot_single_run(
-    w, train_losses, test_losses, x_train, y_train, x_test, y_test, params, save_path=None
-):
+    w: np.ndarray,
+    train_losses: Sequence[float],
+    test_losses: Sequence[float],
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    params: dict[str, float],
+    save_path: SavePath = None,
+) -> None:
     """Loss history and final predictions on train and test data for one run."""
     m = params["m"]
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -114,7 +143,17 @@ def plot_single_run(
     _finish(fig, save_path)
 
 
-def plot_gd_vs_sgd(gd, sgd, x_train, y_train, x_test, y_test, m, lr, save_path=None):
+def plot_gd_vs_sgd(
+    gd: TrainResult,
+    sgd: TrainResult,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    m: int,
+    lr: float,
+    save_path: SavePath = None,
+) -> None:
     """`gd` and `sgd` are (weights, train losses, test losses) tuples."""
     w_gd, gd_train, gd_test = gd
     w_sgd, sgd_train, sgd_test = sgd
@@ -150,7 +189,16 @@ def plot_gd_vs_sgd(gd, sgd, x_train, y_train, x_test, y_test, m, lr, save_path=N
     _finish(fig, save_path)
 
 
-def plot_init_scales(x_train, y_train, scales, runs, w_inits, m, lr, save_path=None):
+def plot_init_scales(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    scales: Sequence[float],
+    runs: dict[float, TrainResult],
+    w_inits: dict[float, np.ndarray],
+    m: int,
+    lr: float,
+    save_path: SavePath = None,
+) -> None:
     """`runs` maps each scale to (weights, train losses, test losses)."""
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     fig.suptitle(
@@ -187,7 +235,14 @@ def plot_init_scales(x_train, y_train, scales, runs, w_inits, m, lr, save_path=N
     _finish(fig, save_path)
 
 
-def plot_widths(x_train, y_train, widths, runs, lr, save_path=None):
+def plot_widths(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    widths: Sequence[int],
+    runs: dict[int, TrainResult],
+    lr: float,
+    save_path: SavePath = None,
+) -> None:
     """`runs` maps each width to (weights, train losses, test losses)."""
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     fig.suptitle(
@@ -225,8 +280,15 @@ def plot_widths(x_train, y_train, widths, runs, lr, save_path=None):
 
 
 def plot_learning_rates(
-    x_train, y_train, rates, runs, convergence_epochs, m, threshold, save_path=None
-):
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    rates: Sequence[float],
+    runs: dict[float, TrainResult],
+    convergence_epochs: dict[float, int],
+    m: int,
+    threshold: float,
+    save_path: SavePath = None,
+) -> None:
     """`runs` maps each learning rate to (weights, train losses, test losses)."""
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     fig.suptitle(
@@ -266,7 +328,17 @@ def plot_learning_rates(
     _finish(fig, save_path)
 
 
-def plot_weight_decay(x_train, y_train, x_test, y_test, lambdas, runs, m, lr, save_path=None):
+def plot_weight_decay(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    lambdas: Sequence[float],
+    runs: dict[float, TrainResult],
+    m: int,
+    lr: float,
+    save_path: SavePath = None,
+) -> None:
     """`runs` maps each decay strength to (weights, train losses, test losses)."""
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     fig.suptitle(
@@ -304,7 +376,16 @@ def plot_weight_decay(x_train, y_train, x_test, y_test, lambdas, runs, m, lr, sa
     _finish(fig, save_path)
 
 
-def plot_freeze(x_train, y_train, all_run, frozen_run, w_initial, m, lr, save_path=None):
+def plot_freeze(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    all_run: TrainResult,
+    frozen_run: TrainResult,
+    w_initial: np.ndarray,
+    m: int,
+    lr: float,
+    save_path: SavePath = None,
+) -> None:
     """`all_run` and `frozen_run` are (weights, train losses, test losses) tuples."""
     w_all, all_train, all_test = all_run
     w_frozen, frozen_train, frozen_test = frozen_run

@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse the command-line options (see ``--help``)."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("experiment", choices=[*EXPERIMENTS, "all"])
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
@@ -36,6 +37,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the selected experiments."""
     args = parse_args()
     setup_logging(getattr(logging, args.log_level))
 

@@ -7,22 +7,41 @@ compared start from the same initial weights.
 """
 
 import logging
+from collections.abc import Callable
+from pathlib import Path
 
 import numpy as np
 
 from relunet import plotting
 from relunet.model import forward, init_weights, mse_loss
-from relunet.training import train_gd, train_outer_only, train_sgd
+from relunet.training import TrainResult, train_gd, train_outer_only, train_sgd
 
 log = logging.getLogger(__name__)
 
+#: Where to save a figure; ``None`` displays it instead.
+SavePath = Path | str | None
 
-def show_data(x_train, y_train, x_test, y_test, save_path=None, seed=55):
+
+def show_data(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> None:
     """Plot the train and test samples."""
     plotting.plot_data(x_train, y_train, x_test, y_test, save_path)
 
 
-def hand_fit(x_train, y_train, x_test, y_test, save_path=None, seed=55):
+def hand_fit(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> np.ndarray:
     """Zero training loss reached by hand with 4 ReLU units."""
     order = np.lexsort((-y_train, x_train))
     x = x_train[order]
@@ -41,19 +60,19 @@ def hand_fit(x_train, y_train, x_test, y_test, save_path=None, seed=55):
 
 
 def single_run(
-    x_train,
-    y_train,
-    x_test,
-    y_test,
-    save_path=None,
-    seed=55,
-    m=30,
-    alpha_inner=4,
-    alpha_outer=5,
-    learning_rate=3,
-    prec=1e-2,
-    max_iter=1000,
-):
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+    m: int = 30,
+    alpha_inner: float = 4,
+    alpha_outer: float = 5,
+    learning_rate: float = 3,
+    prec: float = 1e-2,
+    max_iter: int = 1000,
+) -> TrainResult:
     """Train once with gradient descent and plot the loss history and predictions."""
     np.random.seed(seed)
     w, train_losses, test_losses = train_gd(
@@ -76,7 +95,14 @@ def single_run(
     return w, train_losses, test_losses
 
 
-def gd_vs_sgd(x_train, y_train, x_test, y_test, save_path=None, seed=55):
+def gd_vs_sgd(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> tuple[TrainResult, TrainResult]:
     """Compare gradient descent and SGD from identical initial weights."""
     m, lr, epochs, prec, batch_size = 10, 0.5, 1000, 1e-4, 1
 
@@ -116,8 +142,15 @@ def gd_vs_sgd(x_train, y_train, x_test, y_test, save_path=None, seed=55):
     return gd, sgd
 
 
-def initialization_scales(x_train, y_train, x_test, y_test, save_path=None, seed=55):
-    """Effect of the initialization scale (alpha_inner = alpha_outer = scale)."""
+def initialization_scales(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> dict[float, TrainResult]:
+    """Effect of the initialization scale s, with α_inner = α_outer = s."""
     scales = [0.01, 0.1, 0.5, 1.0, 2.0]
     m, lr, epochs, prec = 15, 1, 500, 1e-3
 
@@ -147,7 +180,14 @@ def initialization_scales(x_train, y_train, x_test, y_test, save_path=None, seed
     return runs
 
 
-def network_width(x_train, y_train, x_test, y_test, save_path=None, seed=55):
+def network_width(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> dict[int, float]:
     """Effect of the network width m."""
     widths = [2, 10, 20, 50, 100]
     lr, epochs, prec = 1, 500, 1e-6
@@ -176,7 +216,14 @@ def network_width(x_train, y_train, x_test, y_test, save_path=None, seed=55):
     return final_test_losses
 
 
-def learning_rate_sweep(x_train, y_train, x_test, y_test, save_path=None, seed=55):
+def learning_rate_sweep(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> dict[float, int]:
     """Effect of the learning rate on convergence speed and fit."""
     rates = [0.01, 0.1, 1.0, 5.0, 10.0]
     m, epochs, prec = 10, 1000, 1e-3
@@ -215,8 +262,15 @@ def learning_rate_sweep(x_train, y_train, x_test, y_test, save_path=None, seed=5
     return convergence_epochs
 
 
-def weight_decay_sweep(x_train, y_train, x_test, y_test, save_path=None, seed=55):
-    """Effect of the weight decay strength lambda, trained with SGD."""
+def weight_decay_sweep(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> dict[float, TrainResult]:
+    """Effect of the weight decay strength λ, trained with SGD."""
     lambdas = [0.0, 0.001, 0.01, 0.1]
     m, lr, epochs, prec = 10, 0.2, 500, 1e-6
 
@@ -249,7 +303,14 @@ def weight_decay_sweep(x_train, y_train, x_test, y_test, save_path=None, seed=55
     return runs
 
 
-def freeze_inner_layer(x_train, y_train, x_test, y_test, save_path=None, seed=55):
+def freeze_inner_layer(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    save_path: SavePath = None,
+    seed: int = 55,
+) -> tuple[TrainResult, TrainResult]:
     """Train all weights versus training only the outer layer (convex problem)."""
     m, lr, epochs, prec = 5, 1.0, 500, 1e-6
 
@@ -288,7 +349,7 @@ def freeze_inner_layer(x_train, y_train, x_test, y_test, save_path=None, seed=55
     return all_run, frozen_run
 
 
-EXPERIMENTS = {
+EXPERIMENTS: dict[str, Callable[..., object]] = {
     "data": show_data,
     "hand-fit": hand_fit,
     "single-run": single_run,

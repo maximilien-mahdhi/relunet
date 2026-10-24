@@ -10,14 +10,23 @@ log = logging.getLogger(__name__)
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
-def load_data(data_dir: Path | str = DEFAULT_DATA_DIR):
+def load_data(
+    data_dir: Path | str = DEFAULT_DATA_DIR,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Load the 1D regression dataset.
 
     Each file holds an array of shape (2, n) with the inputs in the first row
     and the targets in the second.
 
-    Returns:
-        x_train, y_train, x_test, y_test
+    Parameters
+    ----------
+    data_dir:
+        Directory containing ``train_data.npy`` and ``test_data.npy``.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        x_train, y_train, x_test, y_test.
     """
     data_dir = Path(data_dir)
     x_train, y_train = np.load(data_dir / "train_data.npy")
